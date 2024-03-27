@@ -1,0 +1,345 @@
+module ALU_32bits (
+    output [31:0] s ,
+    input [31:0] x,
+    input [31:0] y,
+    input add_sub, //
+    input const_var,
+    input shift_direction,
+    input [1:0] function_class,
+    input [1:0] logic_function,
+    input [4:0] constant_amount
+);
+
+    //Outputs from each functional unit
+    wire [31:0] shifter_out, adder_out, logic_out, set_less_out;
+    wire [31:0] y_xor_add_sub; //Result of XORing y with extended add_sub
+    wire adder_carry_out;
+    
+    //Wire to hold the selected shift amount from the mux
+    wire [4:0] select_amount;
+    
+    //Use the 5 LSBs of x as the variable_amount
+    wire [4:0] variable_amount = x[4:0];
+    
+    //Extend add_sub to 32 bits
+    wire [31:0] add_sub_extended = {32{add_sub}}; //Replicate add_sub 32 times
+    
+    //Wire to hold the subtraction result for set less than operation
+    wire [31:0] subtraction_result;
+    wire subtract_carry_out; //Not used, but necessary for the adder interface
+    wire [31:0] y_twos_complement;
+    
+    //Instantiate the 5-bit 2-to-1 Multiplexer to select the shift amount
+    Bit5_2to1Mux selectShiftAmountMux(
+        .constant_amount(constant_amount),
+        .variable_amount(variable_amount),
+        .const_var(const_var),
+        .select_amount(select_amount) //Output connected to select_amount wire
+    );
+
+    //Instantiate Shifter Module
+    Shifter shifter(
+        .y(y), //32-bit input to be shifted
+        .direction(shift_direction), //Shift direction
+        .amount(select_amount), //Shift amount, selected based on const_var
+        .shifted_y(shifter_out) //32-bit output
+    );
+    
+    //Prepare y for subtraction by converting it to two's complement
+    assign y_twos_complement = ~y + 32'b1;
+    //Perform subtraction by using the adder
+    RippleCarryAdder32 subtractor (
+        .x(x),
+        .y(y_twos_complement), 
+        .Cin(1'b1), //Carry-in set to 1 for subtraction
+        .S(subtraction_result),
+        .Cout(subtract_carry_out)
+    );
+    
+    //Determine the set less than result based on the MSB of the subtraction result
+    assign set_less_out = {32{subtraction_result[31]}}; //MSB indicates sign in two's complement
+    
+    
+    //XOR gate logic for adjusting y based on add_sub signal
+    genvar i;
+    generate
+        for (i = 0; i < 32; i = i + 1) begin : xor_logic
+            xor(y_xor_add_sub[i], y[i], add_sub_extended[i]);
+        end
+    endgenerate
+
+    //Instantiate Adder module with y adjusted for addition/subtraction
+    RippleCarryAdder32 adder(
+        .x(x), //32-bit input
+        .y(y_xor_add_sub), //32-bit input, adjusted for addition/subtraction
+        .Cin(add_sub), //Use add_sub as Cin for the adder
+        .S(adder_out), //32-bit sum output
+        .Cout(adder_carry_out) //Carry-out, could be used as C32 for overflow detection
+    );
+    
+    //Instantiate LogicUnit Module
+    LogicUnit logicUnit(
+        .x(x), //32-bit input
+        .y(y), //32-bit input
+        .logic_function(logic_function), //2-bit input selecting the logic operation
+        .result(logic_out) //32-bit output
+    );
+
+
+    //Multiplexer for selecting operation output
+    wire [31:0] mux_out; //Output from the multiplexer
+
+    //Instantiating the 4-to-1 mux for each bit
+    generate
+        for (i = 0; i < 32; i = i + 1) begin : mux_loop
+            mux4_to_1 mux(
+                .out(mux_out[i]),
+                .i0(shifter_out[i]),    //'00' for shift operation
+                .i1(set_less_out[i]),   //'01' for set-less operation
+                .i2(adder_out[i]),      //'10' for arithmetic operation
+                .i3(logic_out[i]),      //'11' for logic operation
+                .s1(function_class[1]),
+                .s0(function_class[0])
+            );
+        end
+    endgenerate
+
+    //Connect the multiplexer output to the ALU output
+    assign s = mux_out;
+
+    //C32, and k outputs not needed for this implementation
+
+endmodule
+
+module Bit5_2to1Mux(
+    input [4:0] constant_amount,
+    input [4:0] variable_amount,
+    input const_var,
+    output [4:0] select_amount
+);
+    //Internal wire for the inverted select signal
+    wire const_var_n;
+    not not_const_var(const_var_n, const_var);
+
+    //Implementing the 2-to-1 MUX for each bit of the shift amount
+    genvar i;
+    generate
+        for (i = 0; i < 5; i = i + 1) begin: mux_logic
+            wire const_sel, var_sel;
+            
+            //When const_var is 0, select constant_amount
+            and and_const(const_sel, constant_amount[i], const_var_n);
+            
+            //When const_var is 1, select variable_amount
+            and and_var(var_sel, variable_amount[i], const_var);
+            
+            //Combine the two above selections
+            or or_select(select_amount[i], const_sel, var_sel);
+        end
+    endgenerate
+endmodule
+
+
+//Define the 4-to-1 multiplexer as per the provided gate-level example
+module mux4_to_1(
+    output out,
+    input i0, i1, i2, i3,
+    input s1, s0
+);
+    wire sln, s0n;
+    wire y0, y1, y2, y3;
+
+    //Create sln and s0n signals
+    not(sln, s1);
+    not(s0n, s0);
+
+    //3-input and gates instantiated
+    and(y0, i0, sln, s0n);
+    and(y1, i1, sln, s0);
+    and(y2, i2, s1, s0n);
+    and(y3, i3, s1, s0);
+
+    //4-input or gate instantiated
+    or(out, y0, y1, y2, y3);
+endmodule
+
+
+
+module LogicUnit(
+    input [31:0] x,
+    input [31:0] y,
+    input [1:0] logic_function,
+    output [31:0] result
+);
+
+    wire [31:0] and_result, or_result, xor_result, nor_result;
+    wire [31:0] and_or_select, xor_nor_select;
+    
+    //AND operation results
+    genvar i;
+    generate
+        for (i = 0; i < 32; i=i+1) begin: and_loop
+            and(and_result[i], x[i], y[i]);
+        end
+    endgenerate
+    
+    //OR operation results
+    generate
+        for (i = 0; i < 32; i=i+1) begin: or_loop
+            or(or_result[i], x[i], y[i]);
+        end
+    endgenerate
+    
+    //XOR operation results
+    generate
+        for (i = 0; i < 32; i=i+1) begin: xor_loop
+            xor(xor_result[i], x[i], y[i]);
+        end
+    endgenerate
+    
+    //NOR operation results
+    generate
+        for (i = 0; i < 32; i=i+1) begin: nor_loop
+            nor(nor_result[i], x[i], y[i]);
+        end
+    endgenerate
+    
+    //Selecting the result based on logic_function
+    generate
+        for (i = 0; i < 32; i=i+1) begin: select_loop
+            //Select AND or OR based on logic_function[0]
+            mux2to1 and_or_mux(and_result[i], or_result[i], logic_function[0], and_or_select[i]);
+            //Select XOR or NOR based on logic_function[0]
+            mux2to1 xor_nor_mux(xor_result[i], nor_result[i], logic_function[0], xor_nor_select[i]);
+            //Final select based on logic_function[1]
+            mux2to1 final_mux(and_or_select[i], xor_nor_select[i], logic_function[1], result[i]);
+        end
+    endgenerate
+
+endmodule
+
+//2-to-1 MUX implementation using gates
+module mux2to1(input a, input b, input sel, output out);
+    wire not_sel, a_and_not_sel, b_and_sel;
+    not(not_sel, sel);
+    and(a_and_not_sel, a, not_sel);
+    and(b_and_sel, b, sel);
+    or(out, a_and_not_sel, b_and_sel);
+endmodule
+
+
+
+module RippleCarryAdder32(
+    input [31:0] x,
+    input [31:0] y,
+    input Cin,
+    output [31:0] S,
+    output Cout
+);
+
+    wire [31:0] carry; //Internal wires to hold the carry out from each adder
+    
+    //Instantiate the full adders
+    genvar i;
+    generate
+        for (i = 0; i < 32; i = i + 1) begin : full_adder_chain
+            if (i == 0) begin
+                //For the first adder, use the external Cin
+                FullAdder fa(x[i], y[i], Cin, S[i], carry[i]);
+            end else begin
+                //For subsequent adders, chain the carry
+                FullAdder fa(x[i], y[i], carry[i-1], S[i], carry[i]);
+            end
+        end
+    endgenerate
+    
+    assign Cout = carry[31];
+
+endmodule
+
+//FullAdder module
+module FullAdder(
+    input x,
+    input y,
+    input Cin,
+    output S,
+    output Cout
+);
+    //Sum is the XOR of x, y, and Cin
+    xor (S, x, y, Cin);
+    //Carry out is true if two or more inputs are true
+    wire xy, xCin, yCin;
+    and (xy, x, y);
+    and (xCin, x, Cin);
+    and (yCin, y, Cin);
+    or (Cout, xy, xCin, yCin);
+endmodule
+
+
+
+module Shifter(
+    input [31:0] y,
+    input direction,
+    input [4:0] amount,
+    output reg [31:0] shifted_y
+);
+
+    //It ensures that the output shifted_y is immediately updated in response to changes in the inputs.
+    always @(*) begin
+        if (direction == 1'b1) begin
+            //Logical left shift
+            shifted_y = y << amount;
+        end else begin
+            //Logical right shift
+            shifted_y = y >> amount;
+        end
+    end
+
+endmodule
+
+
+
+//--------stimulus module
+// The ALU module name and orders of inputs, outputs should be same as the ALU module in the following
+// H. Li
+
+module stimulus;
+
+    //inputs
+    reg[31:0] A,B;
+    reg C_0,Const_Var,shift_direction;
+    reg [1:0] Function_class;
+    reg [1:0] Logic_function;
+    reg [4:0] Const_amount; 
+    
+    
+    //outputs
+    wire[31:0] s;
+    
+    
+    
+    ALU_32bits my_ALU (s,  A, B,  C_0, Const_Var, shift_direction, Function_class, Logic_function, Const_amount);
+    
+     
+    
+    initial  
+    begin 
+    
+    $monitor($time,"A=%d, B=%d, C_IN=%b,-- Function_class=%d, shift_direction=%b, Const_Var=%b, Const_amount=%d, shift_direction=%b, Logic_function=%d,--OUTPUT=%d \n",A,B,C_0,Function_class,shift_direction,Const_Var,Const_amount,shift_direction,Logic_function,s);
+    end
+    
+    initial
+    begin
+    A=4'd0; B=4'd0; C_0=1'b0;
+    #5 A=8'd199; B=8'd55; Function_class[1]=1; Function_class[0]=0;  
+    #5 A=8'd119; B=8'd168;C_0=1'b1; Function_class[1]=0; Function_class[0]=1;  
+    #5 A=16'd1235; B=16'd1236; C_0=1'b1;  Function_class[1]=1; Function_class[0]=0; 
+    #5 A=16'd11; B=16'd1128; Function_class[1]=0; Function_class[0]=0; shift_direction=1; Const_Var=1; 
+    #5 A=16'd129; B=16'd6856;Function_class[1]=0; Function_class[0]=0;shift_direction=0;Const_Var=0;Const_amount=5'd15;  
+    #5 A=16'd6656; B=16'd2818; C_0=1'b0;Function_class[1]=1; Function_class[0]=1;Logic_function=2'd0;  
+    #5 A=16'd995; B=16'd2288; C_0=1'b1;Function_class[1]=1; Function_class[0]=1;Logic_function=2'd1; 
+    #5 A=8'd55; B=16'd6286; C_0=1'b1;Function_class[1]=1; Function_class[0]=1;Logic_function=2'd2; 
+    #5 A=8'd188; B=16'd8486; C_0=1'b0;Function_class[1]=1; Function_class[0]=1;Logic_function=2'd3; 
+    end
+
+endmodule
