@@ -19,10 +19,50 @@ module ALU_32bits (
     wire [4:0] select_amount;
     
     //Use the 5 LSBs of x as the variable_amount
-    wire [4:0] variable_amount = x[4:0];
+    wire [4:0] variable_amount;
+    wire [4:0] zero_s = 5'b00000; 
+    or variable_amount_or_gate[4:0](variable_amount, x[4:0], zero_s);
+
     
     //Extend add_sub to 32 bits
-    wire [31:0] add_sub_extended = {32{add_sub}}; //Replicate add_sub 32 times
+    wire [31:0] add_sub_extended;
+    wire zs = 1'b0; 
+    
+    //Instantiate OR gates for each bit to replicate add_sub
+    or or_gate_0  (add_sub_extended[0],  add_sub, zs);
+    or or_gate_1  (add_sub_extended[1],  add_sub, zs);
+    or or_gate_2  (add_sub_extended[2],  add_sub, zs);
+    or or_gate_3  (add_sub_extended[3],  add_sub, zs);
+    or or_gate_4  (add_sub_extended[4],  add_sub, zs);
+    or or_gate_5  (add_sub_extended[5],  add_sub, zs);
+    or or_gate_6  (add_sub_extended[6],  add_sub, zs);
+    or or_gate_7  (add_sub_extended[7],  add_sub, zs);
+    or or_gate_8  (add_sub_extended[8],  add_sub, zs);
+    or or_gate_9  (add_sub_extended[9],  add_sub, zs);
+    or or_gate_10 (add_sub_extended[10], add_sub, zs);
+    or or_gate_11 (add_sub_extended[11], add_sub, zs);
+    or or_gate_12 (add_sub_extended[12], add_sub, zs);
+    or or_gate_13 (add_sub_extended[13], add_sub, zs);
+    or or_gate_14 (add_sub_extended[14], add_sub, zs);
+    or or_gate_15 (add_sub_extended[15], add_sub, zs);
+    or or_gate_16 (add_sub_extended[16], add_sub, zs);
+    or or_gate_17 (add_sub_extended[17], add_sub, zs);
+    or or_gate_18 (add_sub_extended[18], add_sub, zs);
+    or or_gate_19 (add_sub_extended[19], add_sub, zs);
+    or or_gate_20 (add_sub_extended[20], add_sub, zs);
+    or or_gate_21 (add_sub_extended[21], add_sub, zs);
+    or or_gate_22 (add_sub_extended[22], add_sub, zs);
+    or or_gate_23 (add_sub_extended[23], add_sub, zs);
+    or or_gate_24 (add_sub_extended[24], add_sub, zs);
+    or or_gate_25 (add_sub_extended[25], add_sub, zs);
+    or or_gate_26 (add_sub_extended[26], add_sub, zs);
+    or or_gate_27 (add_sub_extended[27], add_sub, zs);
+    or or_gate_28 (add_sub_extended[28], add_sub, zs);
+    or or_gate_29 (add_sub_extended[29], add_sub, zs);
+    or or_gate_30 (add_sub_extended[30], add_sub, zs);
+    or or_gate_31 (add_sub_extended[31], add_sub, zs);
+
+
     
     //Wire to hold the subtraction result for set less than operation
     wire [31:0] subtraction_result;
@@ -45,8 +85,23 @@ module ALU_32bits (
         .shifted_y(shifter_out) //32-bit output
     );
     
-    //Prepare y for subtraction by converting it to two's complement
-    assign y_twos_complement = ~y + 32'b1;
+    wire [31:0] y_inverted;
+    wire [31:0] one = 32'b1; //A constant value of 1 for adding to the inverted y
+    wire add_one_carry_out; //The carry out from the adder, which might not be used
+    
+    //Invert y to get ~y
+    not y_invert_gates[31:0](y_inverted, y);
+
+    
+    //Add 1 to the inverted y to complete two's complement operation
+    RippleCarryAdder32 add_one_to_inverted_y (
+        .x(y_inverted),
+        .y(one),
+        .Cin(1'b0), //No carry-in for this operation
+        .S(y_twos_complement),
+        .Cout(add_one_carry_out) //Not used in this context
+    );
+
     //Perform subtraction by using the adder
     RippleCarryAdder32 subtractor (
         .x(x),
@@ -57,16 +112,45 @@ module ALU_32bits (
     );
     
     //Determine the set less than result based on the MSB of the subtraction result
-    assign set_less_out = {32{subtraction_result[31]}}; //MSB indicates sign in two's complement
+    wire msb_signal = subtraction_result[31]; //MSB of subtraction_result
+    wire zs1 = 1'b0; 
     
+    or replicate_msb_0(set_less_out[0], msb_signal, zs1);
+    or replicate_msb_1(set_less_out[1], msb_signal, zs1);
+    or replicate_msb_2(set_less_out[2], msb_signal, zs1);
+    or replicate_msb_3(set_less_out[3], msb_signal, zs1);
+    or replicate_msb_4(set_less_out[4], msb_signal, zs1);
+    or replicate_msb_5(set_less_out[5], msb_signal, zs1);
+    or replicate_msb_6(set_less_out[6], msb_signal, zs1);
+    or replicate_msb_7(set_less_out[7], msb_signal, zs1);
+    or replicate_msb_8(set_less_out[8], msb_signal, zs1);
+    or replicate_msb_9(set_less_out[9], msb_signal, zs1);
+    or replicate_msb_10(set_less_out[10], msb_signal, zs1);
+    or replicate_msb_11(set_less_out[11], msb_signal, zs1);
+    or replicate_msb_12(set_less_out[12], msb_signal, zs1);
+    or replicate_msb_13(set_less_out[13], msb_signal, zs1);
+    or replicate_msb_14(set_less_out[14], msb_signal, zs1);
+    or replicate_msb_15(set_less_out[15], msb_signal, zs1);
+    or replicate_msb_16(set_less_out[16], msb_signal, zs1);
+    or replicate_msb_17(set_less_out[17], msb_signal, zs1);
+    or replicate_msb_18(set_less_out[18], msb_signal, zs1);
+    or replicate_msb_19(set_less_out[19], msb_signal, zs1);
+    or replicate_msb_20(set_less_out[20], msb_signal, zs1);
+    or replicate_msb_21(set_less_out[21], msb_signal, zs1);
+    or replicate_msb_22(set_less_out[22], msb_signal, zs1);
+    or replicate_msb_23(set_less_out[23], msb_signal, zs1);
+    or replicate_msb_24(set_less_out[24], msb_signal, zs1);
+    or replicate_msb_25(set_less_out[25], msb_signal, zs1);
+    or replicate_msb_26(set_less_out[26], msb_signal, zs1);
+    or replicate_msb_27(set_less_out[27], msb_signal, zs1);
+    or replicate_msb_28(set_less_out[28], msb_signal, zs1);
+    or replicate_msb_29(set_less_out[29], msb_signal, zs1);
+    or replicate_msb_30(set_less_out[30], msb_signal, zs1);
+    or replicate_msb_31(set_less_out[31], msb_signal, zs1);
+
     
     //XOR gate logic for adjusting y based on add_sub signal
-    genvar i;
-    generate
-        for (i = 0; i < 32; i = i + 1) begin : xor_logic
-            xor(y_xor_add_sub[i], y[i], add_sub_extended[i]);
-        end
-    endgenerate
+    xor y_xor_add_sub_gates[31:0] (y_xor_add_sub, y, add_sub_extended);
 
     //Instantiate Adder module with y adjusted for addition/subtraction
     RippleCarryAdder32 adder(
@@ -89,23 +173,44 @@ module ALU_32bits (
     //Multiplexer for selecting operation output
     wire [31:0] mux_out; //Output from the multiplexer
 
-    //Instantiating the 4-to-1 mux for each bit
-    generate
-        for (i = 0; i < 32; i = i + 1) begin : mux_loop
-            mux4_to_1 mux(
-                .out(mux_out[i]),
-                .i0(shifter_out[i]),    //'00' for shift operation
-                .i1(set_less_out[i]),   //'01' for set-less operation
-                .i2(adder_out[i]),      //'10' for arithmetic operation
-                .i3(logic_out[i]),      //'11' for logic operation
-                .s1(function_class[1]),
-                .s0(function_class[0])
-            );
-        end
-    endgenerate
+    //Manual instantiation for each bit of the 4-to-1 mux
+    mux4_to_1 mux0 (.out(mux_out[0]), .i0(shifter_out[0]), .i1(set_less_out[0]), .i2(adder_out[0]), .i3(logic_out[0]), .s1(function_class[1]), .s0(function_class[0]));
+    mux4_to_1 mux1 (.out(mux_out[1]), .i0(shifter_out[1]), .i1(set_less_out[1]), .i2(adder_out[1]), .i3(logic_out[1]), .s1(function_class[1]), .s0(function_class[0]));
+    mux4_to_1 mux2 (.out(mux_out[2]), .i0(shifter_out[2]), .i1(set_less_out[2]), .i2(adder_out[2]), .i3(logic_out[2]), .s1(function_class[1]), .s0(function_class[0]));
+    mux4_to_1 mux3 (.out(mux_out[3]), .i0(shifter_out[3]), .i1(set_less_out[3]), .i2(adder_out[3]), .i3(logic_out[3]), .s1(function_class[1]), .s0(function_class[0]));
+    mux4_to_1 mux4 (.out(mux_out[4]), .i0(shifter_out[4]), .i1(set_less_out[4]), .i2(adder_out[4]), .i3(logic_out[4]), .s1(function_class[1]), .s0(function_class[0]));
+    mux4_to_1 mux5 (.out(mux_out[5]), .i0(shifter_out[5]), .i1(set_less_out[5]), .i2(adder_out[5]), .i3(logic_out[5]), .s1(function_class[1]), .s0(function_class[0]));
+    mux4_to_1 mux6 (.out(mux_out[6]), .i0(shifter_out[6]), .i1(set_less_out[6]), .i2(adder_out[6]), .i3(logic_out[6]), .s1(function_class[1]), .s0(function_class[0]));
+    mux4_to_1 mux7 (.out(mux_out[7]), .i0(shifter_out[7]), .i1(set_less_out[7]), .i2(adder_out[7]), .i3(logic_out[7]), .s1(function_class[1]), .s0(function_class[0]));
+    mux4_to_1 mux8 (.out(mux_out[8]), .i0(shifter_out[8]), .i1(set_less_out[8]), .i2(adder_out[8]), .i3(logic_out[8]), .s1(function_class[1]), .s0(function_class[0]));
+    mux4_to_1 mux9 (.out(mux_out[9]), .i0(shifter_out[9]), .i1(set_less_out[9]), .i2(adder_out[9]), .i3(logic_out[9]), .s1(function_class[1]), .s0(function_class[0]));
+    mux4_to_1 mux10 (.out(mux_out[10]), .i0(shifter_out[10]), .i1(set_less_out[10]), .i2(adder_out[10]), .i3(logic_out[10]), .s1(function_class[1]), .s0(function_class[0]));
+    mux4_to_1 mux11 (.out(mux_out[11]), .i0(shifter_out[11]), .i1(set_less_out[11]), .i2(adder_out[11]), .i3(logic_out[11]), .s1(function_class[1]), .s0(function_class[0]));
+    mux4_to_1 mux12 (.out(mux_out[12]), .i0(shifter_out[12]), .i1(set_less_out[12]), .i2(adder_out[12]), .i3(logic_out[12]), .s1(function_class[1]), .s0(function_class[0]));
+    mux4_to_1 mux13 (.out(mux_out[13]), .i0(shifter_out[13]), .i1(set_less_out[13]), .i2(adder_out[13]), .i3(logic_out[13]), .s1(function_class[1]), .s0(function_class[0]));
+    mux4_to_1 mux14 (.out(mux_out[14]), .i0(shifter_out[14]), .i1(set_less_out[14]), .i2(adder_out[14]), .i3(logic_out[14]), .s1(function_class[1]), .s0(function_class[0]));
+    mux4_to_1 mux15 (.out(mux_out[15]), .i0(shifter_out[15]), .i1(set_less_out[15]), .i2(adder_out[15]), .i3(logic_out[15]), .s1(function_class[1]), .s0(function_class[0]));
+    mux4_to_1 mux16 (.out(mux_out[16]), .i0(shifter_out[16]), .i1(set_less_out[16]), .i2(adder_out[16]), .i3(logic_out[16]), .s1(function_class[1]), .s0(function_class[0]));
+    mux4_to_1 mux17 (.out(mux_out[17]), .i0(shifter_out[17]), .i1(set_less_out[17]), .i2(adder_out[17]), .i3(logic_out[17]), .s1(function_class[1]), .s0(function_class[0]));
+    mux4_to_1 mux18 (.out(mux_out[18]), .i0(shifter_out[18]), .i1(set_less_out[18]), .i2(adder_out[18]), .i3(logic_out[18]), .s1(function_class[1]), .s0(function_class[0]));
+    mux4_to_1 mux19 (.out(mux_out[19]), .i0(shifter_out[19]), .i1(set_less_out[19]), .i2(adder_out[19]), .i3(logic_out[19]), .s1(function_class[1]), .s0(function_class[0]));
+    mux4_to_1 mux20 (.out(mux_out[20]), .i0(shifter_out[20]), .i1(set_less_out[20]), .i2(adder_out[20]), .i3(logic_out[20]), .s1(function_class[1]), .s0(function_class[0]));
+    mux4_to_1 mux21 (.out(mux_out[21]), .i0(shifter_out[21]), .i1(set_less_out[21]), .i2(adder_out[21]), .i3(logic_out[21]), .s1(function_class[1]), .s0(function_class[0]));
+    mux4_to_1 mux22 (.out(mux_out[22]), .i0(shifter_out[22]), .i1(set_less_out[22]), .i2(adder_out[22]), .i3(logic_out[22]), .s1(function_class[1]), .s0(function_class[0]));
+    mux4_to_1 mux23 (.out(mux_out[23]), .i0(shifter_out[23]), .i1(set_less_out[23]), .i2(adder_out[23]), .i3(logic_out[23]), .s1(function_class[1]), .s0(function_class[0]));
+    mux4_to_1 mux24 (.out(mux_out[24]), .i0(shifter_out[24]), .i1(set_less_out[24]), .i2(adder_out[24]), .i3(logic_out[24]), .s1(function_class[1]), .s0(function_class[0]));
+    mux4_to_1 mux25 (.out(mux_out[25]), .i0(shifter_out[25]), .i1(set_less_out[25]), .i2(adder_out[25]), .i3(logic_out[25]), .s1(function_class[1]), .s0(function_class[0]));
+    mux4_to_1 mux26 (.out(mux_out[26]), .i0(shifter_out[26]), .i1(set_less_out[26]), .i2(adder_out[26]), .i3(logic_out[26]), .s1(function_class[1]), .s0(function_class[0]));
+    mux4_to_1 mux27 (.out(mux_out[27]), .i0(shifter_out[27]), .i1(set_less_out[27]), .i2(adder_out[27]), .i3(logic_out[27]), .s1(function_class[1]), .s0(function_class[0]));
+    mux4_to_1 mux28 (.out(mux_out[28]), .i0(shifter_out[28]), .i1(set_less_out[28]), .i2(adder_out[28]), .i3(logic_out[28]), .s1(function_class[1]), .s0(function_class[0]));
+    mux4_to_1 mux29 (.out(mux_out[29]), .i0(shifter_out[29]), .i1(set_less_out[29]), .i2(adder_out[29]), .i3(logic_out[29]), .s1(function_class[1]), .s0(function_class[0]));
+    mux4_to_1 mux30 (.out(mux_out[30]), .i0(shifter_out[30]), .i1(set_less_out[30]), .i2(adder_out[30]), .i3(logic_out[30]), .s1(function_class[1]), .s0(function_class[0]));
+    mux4_to_1 mux31 (.out(mux_out[31]), .i0(shifter_out[31]), .i1(set_less_out[31]), .i2(adder_out[31]), .i3(logic_out[31]), .s1(function_class[1]), .s0(function_class[0]));
 
     //Connect the multiplexer output to the ALU output
-    assign s = mux_out;
+    wire [31:0] zero_signal = 32'b0; //A 32-bit wide signal that is all zeros
+    or connect_mux_out_to_s[31:0](s, mux_out, zero_signal);
+
 
     //C32, and k outputs not needed for this implementation
 
@@ -121,22 +226,35 @@ module Bit5_2to1Mux(
     wire const_var_n;
     not not_const_var(const_var_n, const_var);
 
-    //Implementing the 2-to-1 MUX for each bit of the shift amount
-    genvar i;
-    generate
-        for (i = 0; i < 5; i = i + 1) begin: mux_logic
-            wire const_sel, var_sel;
-            
-            //When const_var is 0, select constant_amount
-            and and_const(const_sel, constant_amount[i], const_var_n);
-            
-            //When const_var is 1, select variable_amount
-            and and_var(var_sel, variable_amount[i], const_var);
-            
-            //Combine the two above selections
-            or or_select(select_amount[i], const_sel, var_sel);
-        end
-    endgenerate
+    //Bit 0
+    wire const_sel_0, var_sel_0;
+    and and_const_0(const_sel_0, constant_amount[0], const_var_n);
+    and and_var_0(var_sel_0, variable_amount[0], const_var);
+    or or_select_0(select_amount[0], const_sel_0, var_sel_0);
+    
+    //Bit 1
+    wire const_sel_1, var_sel_1;
+    and and_const_1(const_sel_1, constant_amount[1], const_var_n);
+    and and_var_1(var_sel_1, variable_amount[1], const_var);
+    or or_select_1(select_amount[1], const_sel_1, var_sel_1);
+    
+    //Bit 2
+    wire const_sel_2, var_sel_2;
+    and and_const_2(const_sel_2, constant_amount[2], const_var_n);
+    and and_var_2(var_sel_2, variable_amount[2], const_var);
+    or or_select_2(select_amount[2], const_sel_2, var_sel_2);
+    
+    //Bit 3
+    wire const_sel_3, var_sel_3;
+    and and_const_3(const_sel_3, constant_amount[3], const_var_n);
+    and and_var_3(var_sel_3, variable_amount[3], const_var);
+    or or_select_3(select_amount[3], const_sel_3, var_sel_3);
+    
+    //Bit 4
+    wire const_sel_4, var_sel_4;
+    and and_const_4(const_sel_4, constant_amount[4], const_var_n);
+    and and_var_4(var_sel_4, variable_amount[4], const_var);
+    or or_select_4(select_amount[4], const_sel_4, var_sel_4);
 endmodule
 
 
@@ -176,45 +294,124 @@ module LogicUnit(
     wire [31:0] and_or_select, xor_nor_select;
     
     //AND operation results
-    genvar i;
-    generate
-        for (i = 0; i < 32; i=i+1) begin: and_loop
-            and(and_result[i], x[i], y[i]);
-        end
-    endgenerate
+    and and_gates[31:0] (and_result, x, y);
     
     //OR operation results
-    generate
-        for (i = 0; i < 32; i=i+1) begin: or_loop
-            or(or_result[i], x[i], y[i]);
-        end
-    endgenerate
+    or orG[31:0](or_result, x, y);
     
     //XOR operation results
-    generate
-        for (i = 0; i < 32; i=i+1) begin: xor_loop
-            xor(xor_result[i], x[i], y[i]);
-        end
-    endgenerate
+    xor xO[31:0](xor_result, x, y);
     
     //NOR operation results
-    generate
-        for (i = 0; i < 32; i=i+1) begin: nor_loop
-            nor(nor_result[i], x[i], y[i]);
-        end
-    endgenerate
+    nor nO[31:0](nor_result, x, y);
+    
     
     //Selecting the result based on logic_function
-    generate
-        for (i = 0; i < 32; i=i+1) begin: select_loop
-            //Select AND or OR based on logic_function[0]
-            mux2to1 and_or_mux(and_result[i], or_result[i], logic_function[0], and_or_select[i]);
-            //Select XOR or NOR based on logic_function[0]
-            mux2to1 xor_nor_mux(xor_result[i], nor_result[i], logic_function[0], xor_nor_select[i]);
-            //Final select based on logic_function[1]
-            mux2to1 final_mux(and_or_select[i], xor_nor_select[i], logic_function[1], result[i]);
-        end
-    endgenerate
+    
+    //Select AND or OR based on logic_function[0]
+    mux2to1 and_or_mux0(and_result[0], or_result[0], logic_function[0], and_or_select[0]);
+    mux2to1 and_or_mux1(and_result[1], or_result[1], logic_function[0], and_or_select[1]);
+    mux2to1 and_or_mux2(and_result[2], or_result[2], logic_function[0], and_or_select[2]);
+    mux2to1 and_or_mux3(and_result[3], or_result[3], logic_function[0], and_or_select[3]);
+    mux2to1 and_or_mux4(and_result[4], or_result[4], logic_function[0], and_or_select[4]);
+    mux2to1 and_or_mux5(and_result[5], or_result[5], logic_function[0], and_or_select[5]);
+    mux2to1 and_or_mux6(and_result[6], or_result[6], logic_function[0], and_or_select[6]);
+    mux2to1 and_or_mux7(and_result[7], or_result[7], logic_function[0], and_or_select[7]);
+    mux2to1 and_or_mux8(and_result[8], or_result[8], logic_function[0], and_or_select[8]);
+    mux2to1 and_or_mux9(and_result[9], or_result[9], logic_function[0], and_or_select[9]);
+    mux2to1 and_or_mux10(and_result[10], or_result[10], logic_function[0], and_or_select[10]);
+    mux2to1 and_or_mux11(and_result[11], or_result[11], logic_function[0], and_or_select[11]);
+    mux2to1 and_or_mux12(and_result[12], or_result[12], logic_function[0], and_or_select[12]);
+    mux2to1 and_or_mux13(and_result[13], or_result[13], logic_function[0], and_or_select[13]);
+    mux2to1 and_or_mux14(and_result[14], or_result[14], logic_function[0], and_or_select[14]);
+    mux2to1 and_or_mux15(and_result[15], or_result[15], logic_function[0], and_or_select[15]);
+    mux2to1 and_or_mux16(and_result[16], or_result[16], logic_function[0], and_or_select[16]);
+    mux2to1 and_or_mux17(and_result[17], or_result[17], logic_function[0], and_or_select[17]);
+    mux2to1 and_or_mux18(and_result[18], or_result[18], logic_function[0], and_or_select[18]);
+    mux2to1 and_or_mux19(and_result[19], or_result[19], logic_function[0], and_or_select[19]);
+    mux2to1 and_or_mux20(and_result[20], or_result[20], logic_function[0], and_or_select[20]);
+    mux2to1 and_or_mux21(and_result[21], or_result[21], logic_function[0], and_or_select[21]);
+    mux2to1 and_or_mux22(and_result[22], or_result[22], logic_function[0], and_or_select[22]);
+    mux2to1 and_or_mux23(and_result[23], or_result[23], logic_function[0], and_or_select[23]);
+    mux2to1 and_or_mux24(and_result[24], or_result[24], logic_function[0], and_or_select[24]);
+    mux2to1 and_or_mux25(and_result[25], or_result[25], logic_function[0], and_or_select[25]);
+    mux2to1 and_or_mux26(and_result[26], or_result[26], logic_function[0], and_or_select[26]);
+    mux2to1 and_or_mux27(and_result[27], or_result[27], logic_function[0], and_or_select[27]);
+    mux2to1 and_or_mux28(and_result[28], or_result[28], logic_function[0], and_or_select[28]);
+    mux2to1 and_or_mux29(and_result[29], or_result[29], logic_function[0], and_or_select[29]);
+    mux2to1 and_or_mux30(and_result[30], or_result[30], logic_function[0], and_or_select[30]);
+    mux2to1 and_or_mux31(and_result[31], or_result[31], logic_function[0], and_or_select[31]);
+    
+    
+    //Select XOR or NOR based on logic_function[0]
+    mux2to1 xor_nor_mux0(xor_result[0], nor_result[0], logic_function[0], xor_nor_select[0]);
+    mux2to1 xor_nor_mux1(xor_result[1], nor_result[1], logic_function[0], xor_nor_select[1]);
+    mux2to1 xor_nor_mux2(xor_result[2], nor_result[2], logic_function[0], xor_nor_select[2]);
+    mux2to1 xor_nor_mux3(xor_result[3], nor_result[3], logic_function[0], xor_nor_select[3]);
+    mux2to1 xor_nor_mux4(xor_result[4], nor_result[4], logic_function[0], xor_nor_select[4]);
+    mux2to1 xor_nor_mux5(xor_result[5], nor_result[5], logic_function[0], xor_nor_select[5]);
+    mux2to1 xor_nor_mux6(xor_result[6], nor_result[6], logic_function[0], xor_nor_select[6]);
+    mux2to1 xor_nor_mux7(xor_result[7], nor_result[7], logic_function[0], xor_nor_select[7]);
+    mux2to1 xor_nor_mux8(xor_result[8], nor_result[8], logic_function[0], xor_nor_select[8]);
+    mux2to1 xor_nor_mux9(xor_result[9], nor_result[9], logic_function[0], xor_nor_select[9]);
+    mux2to1 xor_nor_mux10(xor_result[10], nor_result[10], logic_function[0], xor_nor_select[10]);
+    mux2to1 xor_nor_mux11(xor_result[11], nor_result[11], logic_function[0], xor_nor_select[11]);
+    mux2to1 xor_nor_mux12(xor_result[12], nor_result[12], logic_function[0], xor_nor_select[12]);
+    mux2to1 xor_nor_mux13(xor_result[13], nor_result[13], logic_function[0], xor_nor_select[13]);
+    mux2to1 xor_nor_mux14(xor_result[14], nor_result[14], logic_function[0], xor_nor_select[14]);
+    mux2to1 xor_nor_mux15(xor_result[15], nor_result[15], logic_function[0], xor_nor_select[15]);
+    mux2to1 xor_nor_mux16(xor_result[16], nor_result[16], logic_function[0], xor_nor_select[16]);
+    mux2to1 xor_nor_mux17(xor_result[17], nor_result[17], logic_function[0], xor_nor_select[17]);
+    mux2to1 xor_nor_mux18(xor_result[18], nor_result[18], logic_function[0], xor_nor_select[18]);
+    mux2to1 xor_nor_mux19(xor_result[19], nor_result[19], logic_function[0], xor_nor_select[19]);
+    mux2to1 xor_nor_mux20(xor_result[20], nor_result[20], logic_function[0], xor_nor_select[20]);
+    mux2to1 xor_nor_mux21(xor_result[21], nor_result[21], logic_function[0], xor_nor_select[21]);
+    mux2to1 xor_nor_mux22(xor_result[22], nor_result[22], logic_function[0], xor_nor_select[22]);
+    mux2to1 xor_nor_mux23(xor_result[23], nor_result[23], logic_function[0], xor_nor_select[23]);
+    mux2to1 xor_nor_mux24(xor_result[24], nor_result[24], logic_function[0], xor_nor_select[24]);
+    mux2to1 xor_nor_mux25(xor_result[25], nor_result[25], logic_function[0], xor_nor_select[25]);
+    mux2to1 xor_nor_mux26(xor_result[26], nor_result[26], logic_function[0], xor_nor_select[26]);
+    mux2to1 xor_nor_mux27(xor_result[27], nor_result[27], logic_function[0], xor_nor_select[27]);
+    mux2to1 xor_nor_mux28(xor_result[28], nor_result[28], logic_function[0], xor_nor_select[28]);
+    mux2to1 xor_nor_mux29(xor_result[29], nor_result[29], logic_function[0], xor_nor_select[29]);
+    mux2to1 xor_nor_mux30(xor_result[30], nor_result[30], logic_function[0], xor_nor_select[30]);
+    mux2to1 xor_nor_mux31(xor_result[31], nor_result[31], logic_function[0], xor_nor_select[31]);
+
+
+    //Final select based on logic_function[1]
+    mux2to1 final_mux0(and_or_select[0], xor_nor_select[0], logic_function[1], result[0]);
+    mux2to1 final_mux1(and_or_select[1], xor_nor_select[1], logic_function[1], result[1]);
+    mux2to1 final_mux2(and_or_select[2], xor_nor_select[2], logic_function[1], result[2]);
+    mux2to1 final_mux3(and_or_select[3], xor_nor_select[3], logic_function[1], result[3]);
+    mux2to1 final_mux4(and_or_select[4], xor_nor_select[4], logic_function[1], result[4]);
+    mux2to1 final_mux5(and_or_select[5], xor_nor_select[5], logic_function[1], result[5]);
+    mux2to1 final_mux6(and_or_select[6], xor_nor_select[6], logic_function[1], result[6]);
+    mux2to1 final_mux7(and_or_select[7], xor_nor_select[7], logic_function[1], result[7]);
+    mux2to1 final_mux8(and_or_select[8], xor_nor_select[8], logic_function[1], result[8]);
+    mux2to1 final_mux9(and_or_select[9], xor_nor_select[9], logic_function[1], result[9]);
+    mux2to1 final_mux10(and_or_select[10], xor_nor_select[10], logic_function[1], result[10]);
+    mux2to1 final_mux11(and_or_select[11], xor_nor_select[11], logic_function[1], result[11]);
+    mux2to1 final_mux12(and_or_select[12], xor_nor_select[12], logic_function[1], result[12]);
+    mux2to1 final_mux13(and_or_select[13], xor_nor_select[13], logic_function[1], result[13]);
+    mux2to1 final_mux14(and_or_select[14], xor_nor_select[14], logic_function[1], result[14]);
+    mux2to1 final_mux15(and_or_select[15], xor_nor_select[15], logic_function[1], result[15]);
+    mux2to1 final_mux16(and_or_select[16], xor_nor_select[16], logic_function[1], result[16]);
+    mux2to1 final_mux17(and_or_select[17], xor_nor_select[17], logic_function[1], result[17]);
+    mux2to1 final_mux18(and_or_select[18], xor_nor_select[18], logic_function[1], result[18]);
+    mux2to1 final_mux19(and_or_select[19], xor_nor_select[19], logic_function[1], result[19]);
+    mux2to1 final_mux20(and_or_select[20], xor_nor_select[20], logic_function[1], result[20]);
+    mux2to1 final_mux21(and_or_select[21], xor_nor_select[21], logic_function[1], result[21]);
+    mux2to1 final_mux22(and_or_select[22], xor_nor_select[22], logic_function[1], result[22]);
+    mux2to1 final_mux23(and_or_select[23], xor_nor_select[23], logic_function[1], result[23]);
+    mux2to1 final_mux24(and_or_select[24], xor_nor_select[24], logic_function[1], result[24]);
+    mux2to1 final_mux25(and_or_select[25], xor_nor_select[25], logic_function[1], result[25]);
+    mux2to1 final_mux26(and_or_select[26], xor_nor_select[26], logic_function[1], result[26]);
+    mux2to1 final_mux27(and_or_select[27], xor_nor_select[27], logic_function[1], result[27]);
+    mux2to1 final_mux28(and_or_select[28], xor_nor_select[28], logic_function[1], result[28]);
+    mux2to1 final_mux29(and_or_select[29], xor_nor_select[29], logic_function[1], result[29]);
+    mux2to1 final_mux30(and_or_select[30], xor_nor_select[30], logic_function[1], result[30]);
+    mux2to1 final_mux31(and_or_select[31], xor_nor_select[31], logic_function[1], result[31]);
+
 
 endmodule
 
@@ -238,24 +435,46 @@ module RippleCarryAdder32(
 );
 
     wire [31:0] carry; //Internal wires to hold the carry out from each adder
-    
-    //Instantiate the full adders
-    genvar i;
-    generate
-        for (i = 0; i < 32; i = i + 1) begin : full_adder_chain
-            if (i == 0) begin
-                //For the first adder, use the external Cin
-                FullAdder fa(x[i], y[i], Cin, S[i], carry[i]);
-            end else begin
-                //For subsequent adders, chain the carry
-                FullAdder fa(x[i], y[i], carry[i-1], S[i], carry[i]);
-            end
-        end
-    endgenerate
-    
-    assign Cout = carry[31];
+    wire false_signal = 1'b0; //A constant signal tied to 0
+
+    //Instantiate full adders
+    FullAdder fa0(x[0], y[0], Cin, S[0], carry[0]);
+    FullAdder fa1(x[1], y[1], carry[0], S[1], carry[1]);
+    FullAdder fa2(x[2], y[2], carry[1], S[2], carry[2]);
+    FullAdder fa3(x[3], y[3], carry[2], S[3], carry[3]);
+    FullAdder fa4(x[4], y[4], carry[3], S[4], carry[4]);
+    FullAdder fa5(x[5], y[5], carry[4], S[5], carry[5]);
+    FullAdder fa6(x[6], y[6], carry[5], S[6], carry[6]);
+    FullAdder fa7(x[7], y[7], carry[6], S[7], carry[7]);
+    FullAdder fa8(x[8], y[8], carry[7], S[8], carry[8]);
+    FullAdder fa9(x[9], y[9], carry[8], S[9], carry[9]);
+    FullAdder fa10(x[10], y[10], carry[9], S[10], carry[10]);
+    FullAdder fa11(x[11], y[11], carry[10], S[11], carry[11]);
+    FullAdder fa12(x[12], y[12], carry[11], S[12], carry[12]);
+    FullAdder fa13(x[13], y[13], carry[12], S[13], carry[13]);
+    FullAdder fa14(x[14], y[14], carry[13], S[14], carry[14]);
+    FullAdder fa15(x[15], y[15], carry[14], S[15], carry[15]);
+    FullAdder fa16(x[16], y[16], carry[15], S[16], carry[16]);
+    FullAdder fa17(x[17], y[17], carry[16], S[17], carry[17]);
+    FullAdder fa18(x[18], y[18], carry[17], S[18], carry[18]);
+    FullAdder fa19(x[19], y[19], carry[18], S[19], carry[19]);
+    FullAdder fa20(x[20], y[20], carry[19], S[20], carry[20]);
+    FullAdder fa21(x[21], y[21], carry[20], S[21], carry[21]);
+    FullAdder fa22(x[22], y[22], carry[21], S[22], carry[22]);
+    FullAdder fa23(x[23], y[23], carry[22], S[23], carry[23]);
+    FullAdder fa24(x[24], y[24], carry[23], S[24], carry[24]);
+    FullAdder fa25(x[25], y[25], carry[24], S[25], carry[25]);
+    FullAdder fa26(x[26], y[26], carry[25], S[26], carry[26]);
+    FullAdder fa27(x[27], y[27], carry[26], S[27], carry[27]);
+    FullAdder fa28(x[28], y[28], carry[27], S[28], carry[28]);
+    FullAdder fa29(x[29], y[29], carry[28], S[29], carry[29]);
+    FullAdder fa30(x[30], y[30], carry[29], S[30], carry[30]);
+    FullAdder fa31(x[31], y[31], carry[30], S[31], carry[31]);
+
+    or(Cout, carry[31], false_signal);
 
 endmodule
+
 
 //FullAdder module
 module FullAdder(
@@ -281,19 +500,10 @@ module Shifter(
     input [31:0] y,
     input direction,
     input [4:0] amount,
-    output reg [31:0] shifted_y
+    output [31:0] shifted_y
 );
 
-    //It ensures that the output shifted_y is immediately updated in response to changes in the inputs.
-    always @(*) begin
-        if (direction == 1'b1) begin
-            //Logical left shift
-            shifted_y = y << amount;
-        end else begin
-            //Logical right shift
-            shifted_y = y >> amount;
-        end
-    end
+    assign shifted_y = (direction) ? (y << amount) : (y >> amount);
 
 endmodule
 
